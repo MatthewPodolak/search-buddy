@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SearchBuddy.Application/SearchBuddy.Application.csproj" />
+    <Project Path="src/SearchBuddy.Cli/SearchBuddy.Cli.csproj" />
+    <Project Path="src/SearchBuddy.Domain/SearchBuddy.Domain.csproj" />
+    <Project Path="src/SearchBuddy.Indexer/SearchBuddy.Indexer.csproj" />
+    <Project Path="src/SearchBuddy.Infrastructure/SearchBuddy.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SearchBuddy.Application.Tests/SearchBuddy.Application.Tests.csproj" />
+  </Folder>
+</Solution>
