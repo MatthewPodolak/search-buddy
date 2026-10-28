@@ -1,9 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\SearchBuddy.Domain\SearchBuddy.Domain.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SearchBuddy.Domain\SearchBuddy.Domain.csproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
+	<InternalsVisibleTo Include="SearchBuddy.Application.Tests" />
+  </ItemGroup>
+	
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
