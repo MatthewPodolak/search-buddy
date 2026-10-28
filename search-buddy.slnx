@@ -8,5 +8,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SearchBuddy.Application.Tests/SearchBuddy.Application.Tests.csproj" />
+    <Project Path="tests/SearchBuddy.Indexer.Tests/SearchBuddy.Indexer.Tests.csproj" />
   </Folder>
 </Solution>
