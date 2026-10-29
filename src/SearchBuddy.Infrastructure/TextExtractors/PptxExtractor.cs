@@ -17,20 +17,24 @@ internal sealed class PptxExtractor : ITextExtractor
         using var document = PresentationDocument.Open(stream, isEditable: false);
         var presentationPart = document.PresentationPart!;
 
-        var sb = new StringBuilder();
+        var paragraphs = new List<string>();
 
-        foreach (var slideId in presentationPart.Presentation.SlideIdList?.Elements<P.SlideId>() ?? [])
+        foreach (var slideId in presentationPart.Presentation?.SlideIdList?.Elements<P.SlideId>() ?? [])
         {
             ct.ThrowIfCancellationRequested();
 
             var slidePart = (SlidePart)presentationPart.GetPartById(slideId.RelationshipId!.Value!);
 
-            foreach (var paragraph in slidePart.Slide.Descendants<A.Paragraph>())
+            foreach (var paragraph in slidePart.Slide?.Descendants<A.Paragraph>() ?? [])
             {
-                sb.AppendLine(paragraph.InnerText);
+                var text = paragraph.InnerText.Trim();
+                if (text.Length > 0)
+                {
+                    paragraphs.Add(text);
+                }
             }
         }
 
-        return sb.ToString();
+        return string.Join('\n', paragraphs);
     }
 }

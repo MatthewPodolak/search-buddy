@@ -23,15 +23,21 @@ namespace SearchBuddy.Infrastructure.TextExtractors
             var body = document.MainDocumentPart?.Document?.Body;
             if (body is null) { return string.Empty; }
 
-            var sb = new StringBuilder();
+            var paragraphs = new List<string>();
 
             foreach (var paragraph in body.Descendants<Paragraph>())
             {
                 ct.ThrowIfCancellationRequested();
-                sb.AppendLine(paragraph.InnerText);
+
+                var text = paragraph.InnerText;
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    paragraphs.Add(text);
+                }
             }
 
-            return sb.ToString();
+            return string.Join('\n', paragraphs);
         }
+
     }
 }

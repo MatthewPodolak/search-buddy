@@ -8,7 +8,11 @@
   <ItemGroup>
     <ProjectReference Include="..\SearchBuddy.Application\SearchBuddy.Application.csproj" />
   </ItemGroup>
-
+	
+  <ItemGroup>
+	<InternalsVisibleTo Include="SearchBuddy.Infrastructure.Tests" />
+  </ItemGroup>
+	
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
