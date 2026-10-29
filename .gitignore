@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+#BIG BAD MODEL FILES
+.onnx
+
 # User-specific files
 *.rsuser
 *.suo
@@ -480,3 +483,4 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+/models/embedding/multilingual-e5-small/model.onnx
