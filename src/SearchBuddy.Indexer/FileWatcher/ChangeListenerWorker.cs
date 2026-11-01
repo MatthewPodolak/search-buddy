@@ -7,7 +7,7 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.FileWatcher
 {
-    internal class ChangeListenerWorker(ChangeQueue changeQueue, IOptions<WatchSettings> settings) : BackgroundService
+    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, IOptions<WatchSettings> settings) : BackgroundService
     {
         private Dictionary<ulong, string> processes = new Dictionary<ulong, string>(100_000);
         private readonly HashSet<string> extensions = new(settings.Value.Extensions, StringComparer.OrdinalIgnoreCase);
@@ -38,6 +38,15 @@ namespace SearchBuddy.Indexer.FileWatcher
             session.Source.Kernel.FileIOClose += data =>
             {
                 processes.Remove(data.FileObject);
+            };
+
+            session.Source.Kernel.FileIODelete += data =>
+            {
+                if (string.IsNullOrWhiteSpace(data.FileName)) { return; }
+                if (!extensions.Contains(Path.GetExtension(data.FileName))) { return; }
+
+                changeQueue.Remove(data.FileName);
+                deleteQueue.Enqueue(data.FileName);
             };
 
             await Task.Run(() => session.Source.Process(), ct);
