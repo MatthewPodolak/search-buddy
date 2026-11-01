@@ -9,7 +9,7 @@ namespace SearchBuddy.Indexer.FileWatcher
     internal class ChangeQueue
     {
         private Channel<string> update_queue = Channel.CreateUnbounded<string>();
-        private ConcurrentDictionary<string, byte> queue_set = new ConcurrentDictionary<string, byte>();
+        private ConcurrentDictionary<string, byte> queue_set = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         public ChangeQueue() { }
 
         public int Count => update_queue.Reader.Count;
@@ -28,10 +28,19 @@ namespace SearchBuddy.Indexer.FileWatcher
         }
         public async ValueTask<string> DequeueAsync(CancellationToken ct)
         {
-            var path = await update_queue.Reader.ReadAsync(ct);
-            queue_set.TryRemove(path, out _);
+            while (true)
+            {
+                var path = await update_queue.Reader.ReadAsync(ct);
+                if(queue_set.TryRemove(path, out _))
+                {
+                    return path;
+                }
+            }
+        }
 
-            return path;
+        public bool Remove(string path)
+        {
+            return queue_set.TryRemove(path, out _);
         }
     }
 }

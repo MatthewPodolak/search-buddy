@@ -28,8 +28,10 @@ builder.Services.AddSerilog(lc => lc
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"));
 
 builder.Services.AddSingleton<ChangeQueue>();
+builder.Services.AddSingleton<DeleteQueue>();
 
 builder.Services.AddHostedService<ChangeListenerWorker>();
+builder.Services.AddHostedService<DeleteWorker>();
 builder.Services.AddHostedService<IndexingWorker>();
 builder.Services.AddHostedService<SearchPipeWorker>();
 
