@@ -1,12 +1,11 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using SearchBuddy.Application.TextExtraction;
-
+using SearchBuddy.Application.Text;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace SearchBuddy.Infrastructure.TextExtractors
+namespace SearchBuddy.Infrastructure.Text
 {
     internal class DocxExtractor : ITextExtractor
     {
