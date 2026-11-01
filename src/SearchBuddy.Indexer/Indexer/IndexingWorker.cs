@@ -16,7 +16,7 @@ namespace SearchBuddy.Indexer.Indexer
                 await _slots.WaitAsync(ct);
                 var path = await changeQueue.DequeueAsync(ct);
 
-                _ = ProcessAsync(path, ct);
+                _ = Task.Run(() => ProcessAsync(path, ct), ct);
             }
         }
 
