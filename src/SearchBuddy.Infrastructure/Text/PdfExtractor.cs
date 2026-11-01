@@ -1,11 +1,11 @@
-﻿using SearchBuddy.Application.TextExtraction;
+﻿using SearchBuddy.Application.Text;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
-namespace SearchBuddy.Infrastructure.TextExtractors
+namespace SearchBuddy.Infrastructure.Text
 {
     internal class PdfExtractor : ITextExtractor
     {

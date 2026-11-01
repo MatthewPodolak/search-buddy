@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SearchBuddy.Application.TextExtraction
+namespace SearchBuddy.Application.Text
 {
     public interface ITextExtractor
     {

@@ -1,10 +1,10 @@
 ﻿using System.Text;
 using DocumentFormat.OpenXml.Packaging;
-using SearchBuddy.Application.TextExtraction;
+using SearchBuddy.Application.Text;
 using A = DocumentFormat.OpenXml.Drawing;
 using P = DocumentFormat.OpenXml.Presentation;
 
-namespace SearchBuddy.Infrastructure.TextExtractors;
+namespace SearchBuddy.Infrastructure.Text;
 
 internal sealed class PptxExtractor : ITextExtractor
 {

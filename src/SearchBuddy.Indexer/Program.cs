@@ -2,6 +2,7 @@ using SearchBuddy.Application;
 using SearchBuddy.Indexer;
 using SearchBuddy.Indexer.FileWatcher;
 using SearchBuddy.Indexer.Indexer;
+using SearchBuddy.Indexer.Search;
 using SearchBuddy.Infrastructure;
 using Serilog;
 
@@ -30,9 +31,13 @@ builder.Services.AddSingleton<ChangeQueue>();
 
 builder.Services.AddHostedService<ChangeListenerWorker>();
 builder.Services.AddHostedService<IndexingWorker>();
+builder.Services.AddHostedService<SearchPipeWorker>();
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var host = builder.Build();
+
+await host.Services.InitializeDatabaseAsync();
+
 host.Run();

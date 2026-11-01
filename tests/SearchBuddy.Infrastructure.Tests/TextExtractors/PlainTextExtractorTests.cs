@@ -1,5 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Wordprocessing;
-using SearchBuddy.Infrastructure.TextExtractors;
+using SearchBuddy.Infrastructure.Text;
 using System;
 using System.Collections.Generic;
 using System.Text;
