@@ -9,7 +9,7 @@ namespace SearchBuddy.Indexer.Indexer
 {
     internal class IndexingWorker(ChangeQueue _changeQueue, IIndexingPipeline _pipeline, ILogger<IndexingWorker> _logger, IndexerState _state) : BackgroundService
     {
-        private readonly SemaphoreSlim _slots = new(10, 10);
+        private readonly SemaphoreSlim _slots = new(2, 2);
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
             while (true)
