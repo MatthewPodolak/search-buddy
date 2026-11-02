@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Office2013.Excel;
 using SearchBuddy.Application.Indexing;
+using SearchBuddy.Application.Settings;
 using SearchBuddy.Application.Storage;
 using SearchBuddy.Indexer.FileWatcher;
 using System;
@@ -8,7 +9,7 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.Indexer
 {
-    public class DeleteWorker(DeleteQueue deleteQueue, IDocumentStore docStore, ILogger<DeleteWorker> logger) : BackgroundService
+    public class DeleteWorker(DeleteQueue deleteQueue, IDocumentStore docStore, ILogger<DeleteWorker> logger, IndexerState state) : BackgroundService
     {
         private readonly SemaphoreSlim _slots = new(2, 2);
 
@@ -16,7 +17,9 @@ namespace SearchBuddy.Indexer.Indexer
         {
             while (true)
             {
+                await state.WaitUntilEnabledAsync(ct);
                 await _slots.WaitAsync(ct);
+
                 var path = await deleteQueue.DequeueAsync(ct);
 
                 _ = Task.Run(() => ProcessAsync(path, ct), ct);

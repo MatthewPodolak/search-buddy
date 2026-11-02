@@ -15,11 +15,9 @@ switch (args[0].ToLowerInvariant())
         PrintHelp();
         return 0;
     case "--on":
-        OnRag(!(args.Length > 1 && args[1].Equals("--noupd")));
-        return 0;
+        return await OnRag(!(args.Length > 1 && args[1].Equals("--noupd")));
     case "--off":
-        OffRag();
-        return 0;
+        return await OffRag();
     case "--upd":
         return await ForceDataUpdate();
 }
@@ -48,14 +46,20 @@ static void PrintHelp()
         """);
 }
 
-static void OffRag()
+static async Task<int> OffRag()
 {
+    var response = JsonSerializer.Deserialize<CommandResponse>(await SendAsync(new PipeRequest(PipeCommands.Off)) ?? "null");
 
+    Console.WriteLine(response?.Message ?? "No response from indexer");
+    return response?.Ok == true ? 0 : 1;
 }
 
-static void OnRag(bool withUpdate = true)
+static async Task<int> OnRag(bool withUpdate = true)
 {
-    
+    var response = JsonSerializer.Deserialize<CommandResponse>(await SendAsync(new PipeRequest(PipeCommands.On, WithUpdate: withUpdate)) ?? "null");
+
+    Console.WriteLine(response?.Message ?? "No response from indexer");
+    return response?.Ok == true ? 0 : 1;
 }
 
 static async Task<int> ForceDataUpdate()
