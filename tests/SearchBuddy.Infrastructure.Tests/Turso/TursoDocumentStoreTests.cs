@@ -238,6 +238,91 @@ namespace SearchBuddy.Infrastructure.Tests.Turso
             Assert.Empty(await _store.SearchAsync(Axis(0), ct));
         }
 
+        [Fact]
+        public async Task GetPathHashDictAsync_EmptyDatabase_ReturnsEmptyDictionary()
+        {
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.Empty(dict);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_ReturnsAllDocumentsWithTheirHashes()
+        {
+            await _store.ReplaceAsync(Doc("a.md", "ha", Chunks("a", 1)), ct);
+            await _store.ReplaceAsync(Doc("b.md", "hb", Chunks("b", 2)), ct);
+            await _store.ReplaceAsync(Doc("c.md", "hc", Chunks("c", 3)), ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.Equal(3, dict.Count);
+            Assert.Equal("ha", dict["a.md"]);
+            Assert.Equal("hb", dict["b.md"]);
+            Assert.Equal("hc", dict["c.md"]);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_ReturnsLatestHashAfterReplace()
+        {
+            await _store.ReplaceAsync(Doc("a.md", "h1", Chunks("a", 1)), ct);
+            await _store.ReplaceAsync(Doc("a.md", "h2", Chunks("a", 1)), ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.Single(dict);
+            Assert.Equal("h2", dict["a.md"]);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_LookupIsCaseInsensitive()
+        {
+            await _store.ReplaceAsync(Doc(@"C:\Users\Test\Doc.md", "h1", Chunks("a", 1)), ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.True(dict.TryGetValue(@"C:\USERS\TEST\DOC.MD", out var hash));
+            Assert.Equal("h1", hash);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_PathsDifferingOnlyInCase_DoesNotThrow()
+        {
+            await _store.ReplaceAsync(Doc(@"C:\Users\Test\doc.md", "h1", Chunks("a", 1)), ct);
+            await _store.ReplaceAsync(Doc(@"C:\USERS\TEST\DOC.MD", "h1", Chunks("b", 1)), ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.Single(dict);
+            Assert.Equal("h1", dict[@"c:\users\test\doc.md"]);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_DoesNotContainDeletedDocument()
+        {
+            await _store.ReplaceAsync(Doc("a.md", "ha", Chunks("a", 1)), ct);
+            await _store.ReplaceAsync(Doc("b.md", "hb", Chunks("b", 1)), ct);
+
+            await _store.DeleteAsync("a.md", ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.False(dict.ContainsKey("a.md"));
+            Assert.Equal("hb", dict["b.md"]);
+        }
+
+        [Fact]
+        public async Task GetPathHashDictAsync_ReflectsChangedPath()
+        {
+            await _store.ReplaceAsync(Doc("a.md", "h1", Chunks("a", 1)), ct);
+
+            await _store.ChangePath("a.md", "b.md", ct);
+
+            var dict = await _store.GetPathHashDictAsync(ct);
+
+            Assert.False(dict.ContainsKey("a.md"));
+            Assert.Equal("h1", dict["b.md"]);
+        }
+
         private const int Dim = 8;
 
         private static float[] Axis(int i)

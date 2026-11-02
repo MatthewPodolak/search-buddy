@@ -24,7 +24,7 @@ namespace SearchBuddy.Application.Text
         {
             if (string.IsNullOrWhiteSpace(path)) { return ""; }
 
-            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+            await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 81920, useAsync: true);
             return Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
         }
     }

@@ -1,18 +1,20 @@
 ﻿using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using Microsoft.Extensions.Options;
+using SearchBuddy.Application.Files;
+using SearchBuddy.Application.Settings;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace SearchBuddy.Indexer.FileWatcher
 {
-    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, IOptions<WatchSettings> settings) : BackgroundService
+    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, ScanFilesTrigger scanTrigger, PathFilter filter) : BackgroundService
     {
         private Dictionary<ulong, string> processes = new Dictionary<ulong, string>(100_000);
-        private readonly HashSet<string> extensions = new(settings.Value.Extensions, StringComparer.OrdinalIgnoreCase);
 
-
+        private readonly int upd_trehsold = 5;
+        private int upd_counter = 0;
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
             using var session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
@@ -21,7 +23,7 @@ namespace SearchBuddy.Indexer.FileWatcher
 
             session.Source.Kernel.FileIOCreate += data =>
             {
-                if (extensions.Contains(Path.GetExtension(data.FileName)))
+                if (filter.ShouldIndex(data.FileName))
                 {
                     processes.TryAdd(data.FileObject, data.FileName);
                 }
@@ -42,11 +44,22 @@ namespace SearchBuddy.Indexer.FileWatcher
 
             session.Source.Kernel.FileIODelete += data =>
             {
-                if (string.IsNullOrWhiteSpace(data.FileName)) { return; }
-                if (!extensions.Contains(Path.GetExtension(data.FileName))) { return; }
+                if (!filter.ShouldIndex(data.FileName)) { return; }
 
                 changeQueue.Remove(data.FileName);
                 deleteQueue.Enqueue(data.FileName);
+            };
+
+            session.Source.Kernel.FileIORename += data =>
+            {
+                if (!filter.ShouldIndex(data.FileName)) { return; }
+
+                upd_counter++;
+                if(upd_counter >= upd_trehsold)
+                {
+                    scanTrigger.Request();
+                    upd_counter = 0;
+                }
             };
 
             await Task.Run(() => session.Source.Process(), ct);

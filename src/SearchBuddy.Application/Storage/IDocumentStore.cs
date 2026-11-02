@@ -13,5 +13,6 @@ namespace SearchBuddy.Application.Storage
         Task ReplaceAsync(Document doc, CancellationToken ct);
         Task DeleteAsync(string path, CancellationToken ct);
         Task<IReadOnlyList<SearchHit>> SearchAsync(ReadOnlyMemory<float> queryVector, CancellationToken ct, int limit = 5);
+        Task<IReadOnlyDictionary<string, string>> GetPathHashDictAsync(CancellationToken ct);
     }
 }

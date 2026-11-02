@@ -6,7 +6,7 @@ using System.Threading.Channels;
 
 namespace SearchBuddy.Indexer.FileWatcher
 {
-    internal class ChangeQueue
+    public class ChangeQueue
     {
         private Channel<string> update_queue = Channel.CreateUnbounded<string>();
         private ConcurrentDictionary<string, byte> queue_set = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);

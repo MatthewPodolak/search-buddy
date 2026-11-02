@@ -1,4 +1,5 @@
 using SearchBuddy.Application;
+using SearchBuddy.Application.Settings;
 using SearchBuddy.Indexer;
 using SearchBuddy.Indexer.FileWatcher;
 using SearchBuddy.Indexer.Indexer;
@@ -18,6 +19,16 @@ builder.Services.PostConfigure<WatchSettings>(s =>
     {
         s.Extensions = [".txt", ".pdf", ".docx", ".pptx", ".cs", ".md"];
     }
+
+    if(s.ExcludedDirectoryNames.Length == 0)
+    {
+        s.ExcludedDirectoryNames =
+        [
+            "Windows", "Program Files", "Program Files (x86)", "ProgramData",
+            "$Recycle.Bin", "System Volume Information", "AppData",
+            "node_modules", ".git", ".vs", "bin", "obj"
+        ];
+    }
 });
 
 builder.Services.AddSerilog(lc => lc
@@ -34,6 +45,7 @@ builder.Services.AddHostedService<ChangeListenerWorker>();
 builder.Services.AddHostedService<DeleteWorker>();
 builder.Services.AddHostedService<IndexingWorker>();
 builder.Services.AddHostedService<SearchPipeWorker>();
+builder.Services.AddHostedService<ScanWorker>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);

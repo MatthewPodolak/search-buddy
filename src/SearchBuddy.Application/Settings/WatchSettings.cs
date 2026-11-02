@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SearchBuddy.Indexer.FileWatcher
+namespace SearchBuddy.Application.Settings
 {
-    internal class WatchSettings
+    public class WatchSettings
     {
         public const string SectionName = "Watch";
         public string[] Extensions { get; set; } = [];
+        public string[] ExcludedDirectoryNames { get; set; } = [];
     }
 }
