@@ -1,4 +1,5 @@
 using SearchBuddy.Application;
+using SearchBuddy.Application.Files;
 using SearchBuddy.Application.Settings;
 using SearchBuddy.Indexer;
 using SearchBuddy.Indexer.FileWatcher;
@@ -9,7 +10,9 @@ using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Configuration.AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Indexer", "watchsettings.json"),
+builder.Services.AddWindowsService(o => o.ServiceName = "SearchBuddyIndexer");
+
+builder.Configuration.AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SearchBuddy", "watchsettings.json"),
     optional: true, reloadOnChange: true);
 
 builder.Services.AddSingleton(new IndexerState(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SearchBuddy", "state")));
@@ -35,7 +38,7 @@ builder.Services.PostConfigure<WatchSettings>(s =>
 
 builder.Services.AddSerilog(lc => lc
     .MinimumLevel.Information()
-    .WriteTo.File(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Indexer"), "logs", "indexer-.txt"),
+    .WriteTo.File(Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SearchBuddy"), "logs", "indexer-.txt"),
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 14,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"));
@@ -55,5 +58,16 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var host = builder.Build();
 
 await host.Services.InitializeDatabaseAsync();
+
+var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStopped.Register(() =>
+{
+    if (Environment.ExitCode != 0) { Environment.Exit(Environment.ExitCode); }
+});
+
+if (host.Services.GetRequiredService<IndexerState>().IsEnabled)
+{
+    host.Services.GetRequiredService<ScanFilesTrigger>().Request();
+}
 
 host.Run();
