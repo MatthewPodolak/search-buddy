@@ -7,17 +7,17 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.Indexer
 {
-    internal class IndexingWorker(ChangeQueue changeQueue, IIndexingPipeline pipeline, ILogger<IndexingWorker> logger, IndexerState state) : BackgroundService
+    internal class IndexingWorker(ChangeQueue _changeQueue, IIndexingPipeline _pipeline, ILogger<IndexingWorker> _logger, IndexerState _state) : BackgroundService
     {
         private readonly SemaphoreSlim _slots = new(10, 10);
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
             while (true)
             {
-                await state.WaitUntilEnabledAsync(ct);
+                await _state.WaitUntilEnabledAsync(ct);
                 await _slots.WaitAsync(ct);
 
-                var path = await changeQueue.DequeueAsync(ct);
+                var path = await _changeQueue.DequeueAsync(ct);
 
                 _ = Task.Run(() => ProcessAsync(path, ct), ct);
             }
@@ -27,11 +27,11 @@ namespace SearchBuddy.Indexer.Indexer
         {
             try
             {
-                await pipeline.ProcessFileAsync(filePath, ct);
+                await _pipeline.ProcessFileAsync(filePath, ct);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Indexing failed for {Path}", filePath);
+                _logger.LogError(ex, "Indexing failed for {Path}", filePath);
             }
             finally
             {

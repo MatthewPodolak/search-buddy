@@ -9,7 +9,7 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.Indexer
 {
-    public class DeleteWorker(DeleteQueue deleteQueue, IDocumentStore docStore, ILogger<DeleteWorker> logger, IndexerState state) : BackgroundService
+    public class DeleteWorker(DeleteQueue _deleteQueue, IDocumentStore _docStore, ILogger<DeleteWorker> _logger, IndexerState _state) : BackgroundService
     {
         private readonly SemaphoreSlim _slots = new(2, 2);
 
@@ -17,10 +17,10 @@ namespace SearchBuddy.Indexer.Indexer
         {
             while (true)
             {
-                await state.WaitUntilEnabledAsync(ct);
+                await _state.WaitUntilEnabledAsync(ct);
                 await _slots.WaitAsync(ct);
 
-                var path = await deleteQueue.DequeueAsync(ct);
+                var path = await _deleteQueue.DequeueAsync(ct);
 
                 _ = Task.Run(() => ProcessAsync(path, ct), ct);
             }
@@ -30,11 +30,11 @@ namespace SearchBuddy.Indexer.Indexer
         {
             try
             {
-                await docStore.DeleteAsync(path, ct);
+                await _docStore.DeleteAsync(path, ct);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Deleting failed for {Path}", path);
+                _logger.LogError(ex, "Deleting failed for {Path}", path);
             }
             finally
             {
