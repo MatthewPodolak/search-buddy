@@ -1,4 +1,5 @@
 ﻿using SearchBuddy.Application.Indexing;
+using SearchBuddy.Application.Settings;
 using SearchBuddy.Indexer.FileWatcher;
 using System;
 using System.Collections.Generic;
@@ -6,14 +7,16 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.Indexer
 {
-    internal class IndexingWorker(ChangeQueue changeQueue, IIndexingPipeline pipeline, ILogger<IndexingWorker> logger) : BackgroundService
+    internal class IndexingWorker(ChangeQueue changeQueue, IIndexingPipeline pipeline, ILogger<IndexingWorker> logger, IndexerState state) : BackgroundService
     {
         private readonly SemaphoreSlim _slots = new(10, 10);
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
             while (true)
             {
+                await state.WaitUntilEnabledAsync(ct);
                 await _slots.WaitAsync(ct);
+
                 var path = await changeQueue.DequeueAsync(ct);
 
                 _ = Task.Run(() => ProcessAsync(path, ct), ct);

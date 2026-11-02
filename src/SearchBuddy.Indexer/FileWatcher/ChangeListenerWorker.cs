@@ -9,7 +9,7 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.FileWatcher
 {
-    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, ScanFilesTrigger scanTrigger, PathFilter filter) : BackgroundService
+    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, ScanFilesTrigger scanTrigger, PathFilter filter, IndexerState state) : BackgroundService
     {
         private Dictionary<ulong, string> processes = new Dictionary<ulong, string>(100_000);
 
@@ -17,7 +17,25 @@ namespace SearchBuddy.Indexer.FileWatcher
         private int upd_counter = 0;
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
+            while (!ct.IsCancellationRequested)
+            {
+                await state.WaitUntilEnabledAsync(ct);
+
+                using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, state.DisabledToken);
+                try
+                {
+                    await RunSessionAsync(run.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }
+            }
+        }
+        private async Task RunSessionAsync(CancellationToken ct)
+        {
+            processes.Clear();
+            upd_counter = 0;
+
             using var session = new TraceEventSession(KernelTraceEventParser.KernelSessionName);
+            using var stopReg = ct.Register(() => session.Stop());
 
             session.EnableKernelProvider(KernelTraceEventParser.Keywords.FileIOInit | KernelTraceEventParser.Keywords.DiskFileIO);
 
@@ -55,14 +73,14 @@ namespace SearchBuddy.Indexer.FileWatcher
                 if (!filter.ShouldIndex(data.FileName)) { return; }
 
                 upd_counter++;
-                if(upd_counter >= upd_trehsold)
+                if (upd_counter >= upd_trehsold)
                 {
                     scanTrigger.Request();
                     upd_counter = 0;
                 }
             };
 
-            await Task.Run(() => session.Source.Process(), ct);
+            await Task.Run(() => session.Source.Process());
         }
     }
 }

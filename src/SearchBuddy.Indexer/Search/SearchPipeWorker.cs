@@ -6,10 +6,11 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using SearchBuddy.Application.LLM;
 using SearchBuddy.Application.Files;
+using SearchBuddy.Application.Settings;
 
 namespace SearchBuddy.Indexer.Search
 {
-    public class SearchPipeWorker(IEmbedder embedder, IDocumentStore store, ILlmGen llm, ScanFilesTrigger scanTrigger) : BackgroundService
+    public class SearchPipeWorker(IEmbedder embedder, IDocumentStore store, ILlmGen llm, ScanFilesTrigger scanTrigger, IndexerState state) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -50,8 +51,22 @@ namespace SearchBuddy.Indexer.Search
 
                             break;
                         case PipeCommands.Update:
+                            if (!state.IsEnabled)
+                            {
+                                await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(false, "--- INDEXER IS OFFLINE --- || use sb --on to start")));
+                                break;
+                            }
                             scanTrigger.Request();
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "Data update scheduled")));
+                            break;
+                        case PipeCommands.Off:
+                            state.SetEnabled(false);
+                            await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "--- INDEXER DISABLED ---")));                           
+                            break;
+                        case PipeCommands.On:
+                            state.SetEnabled(true);
+                            if (request.WithUpdate) { scanTrigger.Request(); }
+                            await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "--- INDEXER ENABLED ---")));
                             break;
                         default:
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(false, "Unknown command")));

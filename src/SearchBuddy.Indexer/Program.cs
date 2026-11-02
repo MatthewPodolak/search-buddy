@@ -12,6 +12,8 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.Configuration.AddJsonFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Indexer", "watchsettings.json"),
     optional: true, reloadOnChange: true);
 
+builder.Services.AddSingleton(new IndexerState(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SearchBuddy", "state")));
+
 builder.Services.Configure<WatchSettings>(builder.Configuration.GetSection(WatchSettings.SectionName));
 builder.Services.PostConfigure<WatchSettings>(s =>
 {

@@ -8,7 +8,9 @@ namespace SearchBuddy.Application.Contracts
     {
         public const string Search = "search";
         public const string Update = "update";
+        public const string On = "on";
+        public const string Off = "off";
     }
-    public record PipeRequest(string Command, string? Query = null, int Limit = 5);
+    public record PipeRequest(string Command, string? Query = null, int Limit = 5, bool WithUpdate = true);
     public record CommandResponse(bool Ok, string Message);
 }
