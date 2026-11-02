@@ -4,44 +4,107 @@ using SearchBuddy.Application.Contracts;
 
 if (args.Length == 0)
 {
-    Console.WriteLine("Usage -- sb \"question\"");
+    Console.WriteLine("--- Command not found --- || Use \"sb --help\" to see what you can do");
     return 1;
 }
 
-var query = args[0];
-
-await using var pipe = new NamedPipeClientStream(".", "SearchBuddy", PipeDirection.InOut);
-
-try
+switch (args[0].ToLowerInvariant())
 {
-    await pipe.ConnectAsync(2000);
+    case "--help":
+    case "-h":
+        PrintHelp();
+        return 0;
+    case "--on":
+        OnRag(!(args.Length > 1 && args[1].Equals("--noupd")));
+        return 0;
+    case "--off":
+        OffRag();
+        return 0;
+    case "--upd":
+        return await ForceDataUpdate();
 }
-catch (TimeoutException)
+
+if (args[0].StartsWith('-'))
 {
-    Console.Error.WriteLine("INDEXER PROCESS IS OFF");
+    Console.WriteLine("--- Command not found --- || Use \"sb --help\" to see what you can do");
     return 1;
 }
 
-using var reader = new StreamReader(pipe);
-await using var writer = new StreamWriter(pipe) { AutoFlush = true };
+return await Search(args[0]);
 
-await writer.WriteLineAsync(JsonSerializer.Serialize(new SearchRequest(query, 5)));
 
-Console.WriteLine("searching...");
-
-var response = JsonSerializer.Deserialize<SearchResponse>(await reader.ReadLineAsync() ?? "null");
-if (response is null)
+//pv//
+static void PrintHelp()
 {
-    return 1;
+    Console.WriteLine("""
+        --- AVALIABLE COMMANDS ---
+
+        sb --help || you are here
+        sb --off || disable background process
+        sb --on || start background prcoess (will start data update sim.)
+        sb --on --noupd || start backround process (without data update)
+        sb --upd || force data update in the background
+        sb "ask something" || getting rag to work
+        """);
 }
 
-Console.WriteLine();
-Console.WriteLine(response.Answer);
-Console.WriteLine();
-
-for (int i = 0; i < response.Sources.Count; i++)
+static void OffRag()
 {
-    Console.WriteLine($"[{i + 1}] {response.Sources[i].Distance:F3}  {response.Sources[i].Path}");
+
 }
 
-return 0;
+static void OnRag(bool withUpdate = true)
+{
+    
+}
+
+static async Task<int> ForceDataUpdate()
+{
+    var response = JsonSerializer.Deserialize<CommandResponse>(await SendAsync(new PipeRequest(PipeCommands.Update)) ?? "null");
+
+    Console.WriteLine(response?.Message ?? "No response from indexer");
+    return response?.Ok == true ? 0 : 1;
+}
+
+static async Task<int> Search(string query)
+{
+    Console.WriteLine("searching...");
+
+    var res = JsonSerializer.Deserialize<SearchResponse>(await SendAsync(new PipeRequest(PipeCommands.Search, query)) ?? "null");
+    if (res is null)
+    {
+        return 1;
+    }
+
+    Console.WriteLine();
+    Console.WriteLine(res.Answer);
+    Console.WriteLine();
+
+    for (int i = 0; i < res.Sources.Count; i++)
+    {
+        Console.WriteLine($"[{i + 1}] {res.Sources[i].Distance:F3}  {res.Sources[i].Path}");
+    }
+
+    return 0;
+}
+
+static async Task<string?> SendAsync(PipeRequest request)
+{
+    await using var pipe = new NamedPipeClientStream(".", "SearchBuddy", PipeDirection.InOut, PipeOptions.Asynchronous);
+
+    try
+    {
+        await pipe.ConnectAsync(2000);
+    }
+    catch (TimeoutException)
+    {
+        Console.Error.WriteLine("INDEXER PROCESS IS OFF");
+        return null;
+    }
+
+    using var reader = new StreamReader(pipe);
+    await using var writer = new StreamWriter(pipe) { AutoFlush = true };
+
+    await writer.WriteLineAsync(JsonSerializer.Serialize(request));
+    return await reader.ReadLineAsync();
+}
