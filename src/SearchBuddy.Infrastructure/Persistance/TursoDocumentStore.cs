@@ -128,5 +128,20 @@ namespace SearchBuddy.Infrastructure.Persistance
 
             return hits.AsList();
         }
+
+        public async Task<IReadOnlyDictionary<string, string>> GetPathHashDictAsync(CancellationToken ct)
+        {
+            await using var conn = await _connFactory.OpenAsync(ct);
+
+            var rows = await conn.QueryAsync<(string Path, string ContentHash)>(new CommandDefinition("SELECT Path, ContentHash FROM Documents", cancellationToken: ct));
+
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var (path, hash) in rows)
+            {
+                dict[path] = hash;
+            }
+
+            return dict;
+        }
     }
 }
