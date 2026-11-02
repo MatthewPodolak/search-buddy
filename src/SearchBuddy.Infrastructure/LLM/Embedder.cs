@@ -17,7 +17,7 @@ namespace SearchBuddy.Infrastructure.LLM
         {
             var dir = Path.Combine(AppContext.BaseDirectory, "models", "embedding", "multilingual-e5-small");
 
-            _session = new InferenceSession(Path.Combine(dir, "model.onnx"));
+            _session = new InferenceSession(Path.Combine(dir, "model.onnx"), new SessionOptions() { InterOpNumThreads = 4, IntraOpNumThreads = 4 });
 
             using var stream = File.OpenRead(Path.Combine(dir, "sentencepiece.bpe.model"));
             _tokenizer = SentencePieceTokenizer.Create(stream, true, true);
