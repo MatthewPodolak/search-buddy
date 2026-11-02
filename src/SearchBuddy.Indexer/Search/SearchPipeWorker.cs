@@ -10,7 +10,7 @@ using SearchBuddy.Application.Settings;
 
 namespace SearchBuddy.Indexer.Search
 {
-    public class SearchPipeWorker(IEmbedder embedder, IDocumentStore store, ILlmGen llm, ScanFilesTrigger scanTrigger, IndexerState state) : BackgroundService
+    public class SearchPipeWorker(IEmbedder _embedder, IDocumentStore _store, ILlmGen _llm, ScanFilesTrigger _scanTrigger, IndexerState _state) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -41,31 +41,31 @@ namespace SearchBuddy.Indexer.Search
                     {
                         case PipeCommands.Search when !string.IsNullOrWhiteSpace(request.Query):
 
-                            var vector = await embedder.EmbeddAsync(request.Query, true, stoppingToken);
+                            var vector = await _embedder.EmbeddAsync(request.Query, true, stoppingToken);
 
-                            var hits = await store.SearchAsync(vector, stoppingToken);
+                            var hits = await _store.SearchAsync(vector, stoppingToken);
 
-                            var answer = await llm.AskAsync(request.Query, hits, stoppingToken);
+                            var answer = await _llm.AskAsync(request.Query, hits, stoppingToken);
 
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new SearchResponse(answer, hits)));
 
                             break;
                         case PipeCommands.Update:
-                            if (!state.IsEnabled)
+                            if (!_state.IsEnabled)
                             {
                                 await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(false, "--- INDEXER IS OFFLINE --- || use sb --on to start")));
                                 break;
                             }
-                            scanTrigger.Request();
+                            _scanTrigger.Request();
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "Data update scheduled")));
                             break;
                         case PipeCommands.Off:
-                            state.SetEnabled(false);
+                            _state.SetEnabled(false);
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "--- INDEXER DISABLED ---")));                           
                             break;
                         case PipeCommands.On:
-                            state.SetEnabled(true);
-                            if (request.WithUpdate) { scanTrigger.Request(); }
+                            _state.SetEnabled(true);
+                            if (request.WithUpdate) { _scanTrigger.Request(); }
                             await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "--- INDEXER ENABLED ---")));
                             break;
                         default:

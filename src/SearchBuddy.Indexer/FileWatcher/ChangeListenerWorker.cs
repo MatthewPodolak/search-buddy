@@ -9,7 +9,7 @@ using System.Text;
 
 namespace SearchBuddy.Indexer.FileWatcher
 {
-    internal class ChangeListenerWorker(ChangeQueue changeQueue, DeleteQueue deleteQueue, ScanFilesTrigger scanTrigger, PathFilter filter, IndexerState state) : BackgroundService
+    internal class ChangeListenerWorker(ChangeQueue _changeQueue, DeleteQueue _deleteQueue, ScanFilesTrigger _scanTrigger, PathFilter _filter, IndexerState _state) : BackgroundService
     {
         private Dictionary<ulong, string> processes = new Dictionary<ulong, string>(100_000);
 
@@ -19,9 +19,9 @@ namespace SearchBuddy.Indexer.FileWatcher
         {
             while (!ct.IsCancellationRequested)
             {
-                await state.WaitUntilEnabledAsync(ct);
+                await _state.WaitUntilEnabledAsync(ct);
 
-                using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, state.DisabledToken);
+                using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, _state.DisabledToken);
                 try
                 {
                     await RunSessionAsync(run.Token);
@@ -41,7 +41,7 @@ namespace SearchBuddy.Indexer.FileWatcher
 
             session.Source.Kernel.FileIOCreate += data =>
             {
-                if (filter.ShouldIndex(data.FileName))
+                if (_filter.ShouldIndex(data.FileName))
                 {
                     processes.TryAdd(data.FileObject, data.FileName);
                 }
@@ -51,7 +51,7 @@ namespace SearchBuddy.Indexer.FileWatcher
             {
                 if (processes.TryGetValue(data.FileObject, out var path))
                 {
-                    changeQueue.Enqueue(path);
+                    _changeQueue.Enqueue(path);
                 }
             };
 
@@ -62,20 +62,20 @@ namespace SearchBuddy.Indexer.FileWatcher
 
             session.Source.Kernel.FileIODelete += data =>
             {
-                if (!filter.ShouldIndex(data.FileName)) { return; }
+                if (!_filter.ShouldIndex(data.FileName)) { return; }
 
-                changeQueue.Remove(data.FileName);
-                deleteQueue.Enqueue(data.FileName);
+                _changeQueue.Remove(data.FileName);
+                _deleteQueue.Enqueue(data.FileName);
             };
 
             session.Source.Kernel.FileIORename += data =>
             {
-                if (!filter.ShouldIndex(data.FileName)) { return; }
+                if (!_filter.ShouldIndex(data.FileName)) { return; }
 
                 upd_counter++;
                 if (upd_counter >= upd_trehsold)
                 {
-                    scanTrigger.Request();
+                    _scanTrigger.Request();
                     upd_counter = 0;
                 }
             };
