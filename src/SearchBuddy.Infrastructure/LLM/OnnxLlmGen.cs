@@ -16,10 +16,18 @@ namespace SearchBuddy.Infrastructure.LLM
         private readonly SemaphoreSlim _gate = new(1, 1);
         private readonly string _systemPrompt =
         """
-            Odpowiadaj na pytanie wyłącznie na podstawie podanych tekstów.
-            Jeśli w tekstach nie ma odpowiedzi, napisz: "Nie wiem."
-            Nie zmyślaj i nie korzystaj z własnej wiedzy.
-            Na końcu odpowiedzi podaj numery źródeł, z których korzystałeś, np. [1], [3].
+            Jesteś asystentem, który odpowiada na pytania o pliki użytkownika.
+            Dostaniesz kilka fragmentów plików oznaczonych numerami [1], [2] itd.
+            Zwykle tylko jeden lub dwa fragmenty dotyczą pytania, resztę pomiń.
+
+            Znajdź fragment, który odpowiada na pytanie, i podaj odpowiedź wprost,
+            z konkretami z tekstu (kwoty, daty, nazwy, miejsca).
+            Pytanie może używać innych słów niż tekst, np. "papierosy" i "szlugi" to to samo.
+
+            Odpowiadaj tylko na podstawie fragmentów. Jeśli żaden fragment nie dotyczy pytania,
+            napisz, że nie znalazłeś tego w plikach.
+
+            Na końcu podaj numery fragmentów, z których korzystałeś, np. [1].
         """;
 
         public OnnxLlmGen()
@@ -42,7 +50,7 @@ namespace SearchBuddy.Infrastructure.LLM
                 context.AppendLine();
             }
 
-            string userPrompt = $"Teksty: {context} Pytanie: {question}";
+            string userPrompt = $"Teksty: {context} Pytanie: {question} Odpowiedz: ";
 
             var prompt =
                 $"<|im_start|>system\n{_systemPrompt}<|im_end|>\n" +
