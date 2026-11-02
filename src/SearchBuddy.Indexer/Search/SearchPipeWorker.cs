@@ -5,10 +5,11 @@ using SearchBuddy.Application.Storage;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using SearchBuddy.Application.LLM;
+using SearchBuddy.Application.Files;
 
 namespace SearchBuddy.Indexer.Search
 {
-    public class SearchPipeWorker(IEmbedder embedder, IDocumentStore store, ILlmGen llm) : BackgroundService
+    public class SearchPipeWorker(IEmbedder embedder, IDocumentStore store, ILlmGen llm, ScanFilesTrigger scanTrigger) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -32,16 +33,30 @@ namespace SearchBuddy.Indexer.Search
 
                 try
                 {
-                    var request = JsonSerializer.Deserialize<SearchRequest>(await reader.ReadLineAsync(stoppingToken) ?? "null");
+                    var request = JsonSerializer.Deserialize<PipeRequest>(await reader.ReadLineAsync(stoppingToken) ?? "null");
                     if (request is null) continue;
 
-                    var vector = await embedder.EmbeddAsync(request.Query, true, stoppingToken);
+                    switch (request?.Command)
+                    {
+                        case PipeCommands.Search when !string.IsNullOrWhiteSpace(request.Query):
 
-                    var hits = await store.SearchAsync(vector, stoppingToken);
+                            var vector = await embedder.EmbeddAsync(request.Query, true, stoppingToken);
 
-                    var answer = await llm.AskAsync(request.Query, hits, stoppingToken);
+                            var hits = await store.SearchAsync(vector, stoppingToken);
 
-                    await writer.WriteLineAsync(JsonSerializer.Serialize(new SearchResponse(answer, hits)));
+                            var answer = await llm.AskAsync(request.Query, hits, stoppingToken);
+
+                            await writer.WriteLineAsync(JsonSerializer.Serialize(new SearchResponse(answer, hits)));
+
+                            break;
+                        case PipeCommands.Update:
+                            scanTrigger.Request();
+                            await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(true, "Data update scheduled")));
+                            break;
+                        default:
+                            await writer.WriteLineAsync(JsonSerializer.Serialize(new CommandResponse(false, "Unknown command")));
+                            break;
+                    }    
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
